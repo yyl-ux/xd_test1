@@ -2,6 +2,9 @@
 Flask==2.3.3
 Flask-CORS==4.0.0
 
+# WSGI 服务器（必须加）
+gunicorn==21.2.0
+
 # 数据处理
 pandas>=2.0.0
 numpy>=1.24.0
