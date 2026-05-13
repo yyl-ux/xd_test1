@@ -1,0 +1,9 @@
+# 忽略训练用的数据集文件夹
+data/
+
+# 忽略 Python 缓存文件
+__pycache__/
+*.pyc
+
+# 忽略 CatBoost 生成的日志文件
+catboost_info/
