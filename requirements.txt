@@ -1,9 +1,18 @@
-streamlit>=1.30.0
+# Flask 核心依赖
+Flask==2.3.3
+Flask-CORS==4.0.0
+
+# 数据处理
 pandas>=2.0.0
 numpy>=1.24.0
-scikit-learn>=1.2.0
-lightgbm>=4.0.0
-joblib>=1.2.0
-python-dotenv>=1.0.0
 scipy>=1.10.0
-flask>=2.3.0
+
+# 机器学习模型依赖
+lightgbm>=4.0.0
+xgboost>=2.0.0
+catboost>=1.2.0
+scikit-learn>=1.2.0
+joblib>=1.2.0
+
+# 其他工具
+python-dotenv>=1.0.0
