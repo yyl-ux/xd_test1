@@ -6,8 +6,10 @@
 
 import os
 import pickle
+import json
 import numpy as np
 import pandas as pd
+from datetime import datetime
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 
@@ -17,6 +19,26 @@ CORS(app)
 # 模型存储
 models = {}
 model_info = {}
+
+# 申请记录存储（内存中，实际生产环境应使用数据库）
+application_records = []
+RECORDS_FILE = 'application_records.json'
+
+def load_records():
+    """从文件加载申请记录"""
+    global application_records
+    if os.path.exists(RECORDS_FILE):
+        try:
+            with open(RECORDS_FILE, 'r', encoding='utf-8') as f:
+                application_records = json.load(f)
+            print(f"已加载 {len(application_records)} 条申请记录")
+        except:
+            application_records = []
+
+def save_records():
+    """保存申请记录到文件"""
+    with open(RECORDS_FILE, 'w', encoding='utf-8') as f:
+        json.dump(application_records, f, ensure_ascii=False, indent=2)
 
 
 def load_models():
@@ -572,6 +594,7 @@ def get_approval_suggestion(probability, derived_data):
 
 # 加载模型
 model_loaded = load_models()
+load_records()  # 加载申请记录
 
 
 @app.route('/')
@@ -584,7 +607,7 @@ def predict():
     """
     预测接口
     前端只发送用户输入的基础数据
-    后端负责：计算衍生特征、计算利率、计算评分、调用模型、返回结果
+    后端负责：计算衍生特征、计算利率、计算评分、调用模型、返回结果、保存记录
     """
     try:
         data = request.get_json()
@@ -611,6 +634,41 @@ def predict():
         combined_prob, suggestion = get_approval_suggestion(probability, derived_data)
         print(f"[DEBUG] 综合概率: {combined_prob}, 建议: {suggestion}")
 
+        # 保存申请记录
+        record = {
+            'id': len(application_records) + 1,
+            'applicantName': data.get('applicantName', ''),
+            'applicantPhone': data.get('applicantPhone', ''),
+            'annualIncome': data.get('annualIncome', 0),
+            'employmentLength': data.get('employmentLength', 0),
+            'homeOwnership': data.get('homeOwnership', 0),
+            'loanAmnt': data.get('loanAmnt', 0),
+            'purpose': data.get('purpose', 0),
+            'term': data.get('term', 5),
+            'creditLimit': data.get('creditLimit', 0),
+            'creditUsed': data.get('creditUsed', 0),
+            'monthlyDebt': data.get('monthlyDebt', 0),
+            'totalAcc': data.get('totalAcc', 0),
+            'openAcc': data.get('openAcc', 0),
+            'delinquency': data.get('delinquency', 0),
+            'pubRec': data.get('pubRec', 0),
+            'pubRecBankruptcies': data.get('pubRecBankruptcies', 0),
+            'probability': combined_prob,
+            'ficoScore': derived_data['ficoScore'],
+            'dti': derived_data['dti'],
+            'revolUtil': derived_data['revolUtil'],
+            'loanToIncome': derived_data['loanToIncome'],
+            'riskScore': derived_data['riskScore'],
+            'interestRate': derived_data['interestRate'],
+            'grade': derived_data['grade'],
+            'installment': derived_data['installment'],
+            'suggestion': suggestion,
+            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        }
+        application_records.append(record)
+        save_records()
+        print(f"[DEBUG] 已保存申请记录 #{record['id']}")
+
         # 返回结果给前端（前端只负责展示）
         result = {
             'probability': combined_prob,  # 使用综合概率
@@ -634,6 +692,78 @@ def predict():
         import traceback
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/records', methods=['GET'])
+def get_records():
+    """获取所有申请记录"""
+    # 支持筛选参数
+    risk_level = request.args.get('riskLevel', '')
+    suggestion = request.args.get('suggestion', '')
+    name = request.args.get('name', '')
+    phone = request.args.get('phone', '')
+
+    filtered_records = application_records.copy()
+
+    # 按风险等级筛选
+    if risk_level:
+        if risk_level == 'low':
+            filtered_records = [r for r in filtered_records if r['probability'] < 0.15]
+        elif risk_level == 'medium':
+            filtered_records = [r for r in filtered_records if 0.15 <= r['probability'] < 0.50]
+        elif risk_level == 'high':
+            filtered_records = [r for r in filtered_records if r['probability'] >= 0.50]
+
+    # 按审批建议筛选
+    if suggestion:
+        if suggestion == '通过':
+            filtered_records = [r for r in filtered_records if '通过' in r['suggestion']]
+        elif suggestion == '复核':
+            filtered_records = [r for r in filtered_records if '复核' in r['suggestion']]
+        elif suggestion == '拒绝':
+            filtered_records = [r for r in filtered_records if '拒绝' in r['suggestion']]
+
+    # 按姓名搜索
+    if name:
+        filtered_records = [r for r in filtered_records if name.lower() in r.get('applicantName', '').lower()]
+
+    # 按电话搜索
+    if phone:
+        filtered_records = [r for r in filtered_records if phone in r.get('applicantPhone', '')]
+
+    # 统计信息
+    total = len(filtered_records)
+    approved = len([r for r in filtered_records if '通过' in r['suggestion']])
+    rejected = len([r for r in filtered_records if '拒绝' in r['suggestion']])
+    avg_prob = sum(r['probability'] for r in filtered_records) / total if total > 0 else 0
+
+    return jsonify({
+        'records': filtered_records,
+        'stats': {
+            'total': total,
+            'approved': approved,
+            'rejected': rejected,
+            'avgProbability': round(avg_prob, 4)
+        }
+    })
+
+
+@app.route('/api/records/<int:record_id>', methods=['GET'])
+def get_record_detail(record_id):
+    """获取单条记录详情"""
+    record = next((r for r in application_records if r['id'] == record_id), None)
+    if record:
+        return jsonify(record)
+    return jsonify({'error': '记录不存在'}), 404
+
+
+@app.route('/api/records/<int:record_id>', methods=['DELETE'])
+def delete_record(record_id):
+    """删除单条记录"""
+    global application_records
+    application_records = [r for r in application_records if r['id'] != record_id]
+    save_records()
+    return jsonify({'success': True})
 
 
 @app.route('/api/model/status', methods=['GET'])

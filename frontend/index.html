@@ -505,13 +505,133 @@
         <div class="nav-item admin-only" data-page="data"><span class="nav-icon">📊</span>数据管理</div>
         <div class="nav-item admin-only" data-page="train"><span class="nav-icon">🎯</span>模型训练</div>
         <div class="nav-item admin-only" data-page="results"><span class="nav-icon">📈</span>结果分析</div>
-        <div class="nav-item active" data-page="predict"><span class="nav-icon">🔮</span>在线预测</div>
+        <div class="nav-item admin-only" data-page="records"><span class="nav-icon">📋</span>申请记录</div>
+        <div class="nav-item" data-page="predict"><span class="nav-icon">🔮</span>在线预测</div>
         <div class="nav-group-title" style="margin-top:20px;">系统</div>
         <div class="nav-item" data-page="about"><span class="nav-icon">ℹ</span>关于</div>
     </aside>
 
     <!-- 主内容 -->
     <main class="main-content">
+
+        <!-- ====== 申请记录（管理员查看） ====== -->
+        <div class="page" id="page-records" style="display:none;">
+            <!-- 统计概览 -->
+            <div class="stat-grid">
+                <div class="stat-card highlight">
+                    <div class="stat-value" id="totalRecords">0</div>
+                    <div class="stat-label">总申请数</div>
+                    <div class="stat-trend">今日新增待统计</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="approvedCount">0</div>
+                    <div class="stat-label">自动通过</div>
+                    <div class="stat-trend up">低风险申请</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="rejectedCount">0</div>
+                    <div class="stat-label">建议拒绝</div>
+                    <div class="stat-trend down">高风险申请</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="avgRiskRate">--</div>
+                    <div class="stat-label">平均违约概率</div>
+                    <div class="stat-trend">所有申请平均</div>
+                </div>
+            </div>
+
+            <!-- 筛选条件 -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title"><span class="icon">🔍</span>筛选与搜索</div>
+                </div>
+                <div class="card-body">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>风险等级</label>
+                            <select id="filterRiskLevel">
+                                <option value="">全部</option>
+                                <option value="low">低风险 (<15%)</option>
+                                <option value="medium">中风险 (15-50%)</option>
+                                <option value="high">高风险 (>50%)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>审批建议</label>
+                            <select id="filterSuggestion">
+                                <option value="">全部</option>
+                                <option value="通过">自动通过/优先通过</option>
+                                <option value="复核">人工复核</option>
+                                <option value="拒绝">建议拒绝</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>申请人姓名</label>
+                            <input type="text" id="filterName" placeholder="搜索申请人姓名">
+                        </div>
+                        <div class="form-group">
+                            <label>联系电话</label>
+                            <input type="text" id="filterPhone" placeholder="搜索联系电话">
+                        </div>
+                    </div>
+                    <div class="btn-group" style="margin-top:16px;">
+                        <button class="btn btn-primary" onclick="filterRecords()">筛选</button>
+                        <button class="btn btn-outline" onclick="clearFilter()">清除筛选</button>
+                        <button class="btn btn-outline" onclick="refreshRecords()">刷新数据</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 申请记录列表 -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title"><span class="icon">📋</span>申请记录列表</div>
+                    <button class="btn btn-outline" onclick="exportRecords()">导出Excel</button>
+                </div>
+                <div class="card-body">
+                    <div style="overflow-x:auto;">
+                        <table style="width:100%;border-collapse:collapse;font-size:13px;">
+                            <thead>
+                                <tr style="background:#f3f4f6;">
+                                    <th style="padding:12px;text-align:left;border-bottom:2px solid #e5e7eb;">序号</th>
+                                    <th style="padding:12px;text-align:left;border-bottom:2px solid #e5e7eb;">申请人</th>
+                                    <th style="padding:12px;text-align:left;border-bottom:2px solid #e5e7eb;">联系电话</th>
+                                    <th style="padding:12px;text-align:right;border-bottom:2px solid #e5e7eb;">年收入</th>
+                                    <th style="padding:12px;text-align:right;border-bottom:2px solid #e5e7eb;">贷款金额</th>
+                                    <th style="padding:12px;text-align:right;border-bottom:2px solid #e5e7eb;">贷款期限</th>
+                                    <th style="padding:12px;text-align:right;border-bottom:2px solid #e5e7eb;">违约概率</th>
+                                    <th style="padding:12px;text-align:center;border-bottom:2px solid #e5e7eb;">风险等级</th>
+                                    <th style="padding:12px;text-align:center;border-bottom:2px solid #e5e7eb;">审批建议</th>
+                                    <th style="padding:12px;text-align:left;border-bottom:2px solid #e5e7eb;">申请时间</th>
+                                    <th style="padding:12px;text-align:center;border-bottom:2px solid #e5e7eb;">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recordsTableBody">
+                                <tr><td colspan="11" style="padding:30px;text-align:center;color:var(--text-secondary);">暂无申请记录</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div style="margin-top:16px;display:flex;justify-content:space-between;align-items:center;">
+                        <span style="font-size:13px;color:var(--text-secondary);">显示 <span id="recordsShowCount">0</span> 条记录</span>
+                        <div class="btn-group">
+                            <button class="btn btn-outline" onclick="prevPage()">上一页</button>
+                            <button class="btn btn-outline" onclick="nextPage()">下一页</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 详情弹窗 -->
+            <div id="recordDetailModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:3000;">
+                <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:800px;max-height:90vh;overflow-y:auto;background:#fff;border-radius:12px;padding:24px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+                        <h3 style="font-size:18px;font-weight:600;">申请详情</h3>
+                        <button onclick="closeDetailModal()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#6b7280;">×</button>
+                    </div>
+                    <div id="recordDetailContent"></div>
+                </div>
+            </div>
+        </div>
 
         <!-- ====== 在线预测 ====== -->
         <div class="page" id="page-predict">
@@ -1409,6 +1529,17 @@ function navigateTo(page) {
     if (navEl) navEl.classList.add('active');
     document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
     document.getElementById('page-' + page).style.display = 'block';
+
+    // 页面切换时刷新数据
+    if (page === 'records') {
+        refreshRecords();
+    } else if (page === 'data') {
+        loadData();
+    } else if (page === 'results') {
+        loadResults();
+    } else if (page === 'train') {
+        checkModelStatus();
+    }
 }
 
 // ====== 导航 ======
@@ -1568,6 +1699,240 @@ function resetForm() {
         }
     });
     document.getElementById('resultPanel').classList.remove('show');
+}
+
+// ====== 申请记录管理 ======
+let allRecords = [];
+let filteredRecords = [];
+
+function refreshRecords() {
+    showToast('正在加载记录...', 'info');
+    fetch('/api/records')
+        .then(res => res.json())
+        .then(data => {
+            allRecords = data.records || [];
+            filteredRecords = allRecords;
+            updateRecordsTable();
+            updateRecordsStats(data.stats);
+            showToast('记录已加载', 'success');
+        })
+        .catch(err => {
+            showToast('无法连接后端服务', 'error');
+        });
+}
+
+function updateRecordsStats(stats) {
+    document.getElementById('totalRecords').textContent = stats.total || 0;
+    document.getElementById('approvedCount').textContent = stats.approved || 0;
+    document.getElementById('rejectedCount').textContent = stats.rejected || 0;
+    document.getElementById('avgRiskRate').textContent = ((stats.avgProbability || 0) * 100).toFixed(1) + '%';
+}
+
+function updateRecordsTable() {
+    const tbody = document.getElementById('recordsTableBody');
+    document.getElementById('recordsShowCount').textContent = filteredRecords.length;
+
+    if (filteredRecords.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="11" style="padding:30px;text-align:center;color:var(--text-secondary);">暂无申请记录</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = filteredRecords.map((record, index) => {
+        // 风险等级
+        const prob = record.probability;
+        let riskLevel, riskClass;
+        if (prob < 0.15) { riskLevel = '低风险'; riskClass = 'risk-low'; }
+        else if (prob < 0.30) { riskLevel = '中低'; riskClass = 'risk-med-low'; }
+        else if (prob < 0.50) { riskLevel = '中风险'; riskClass = 'risk-med'; }
+        else if (prob < 0.70) { riskLevel = '中高'; riskClass = 'risk-med-high'; }
+        else { riskLevel = '高风险'; riskClass = 'risk-high'; }
+
+        // 格式化显示
+        const income = record.annualIncome ? (record.annualIncome / 10000).toFixed(1) + '万' : '--';
+        const loan = record.loanAmnt ? (record.loanAmnt / 10000).toFixed(1) + '万' : '--';
+        const term = record.term ? record.term + '年' : '--';
+
+        return `<tr>
+            <td style="padding:12px;border-bottom:1px solid #e5e7eb;">${record.id}</td>
+            <td style="padding:12px;border-bottom:1px solid #e5e7eb;">${record.applicantName || '--'}</td>
+            <td style="padding:12px;border-bottom:1px solid #e5e7eb;">${record.applicantPhone || '--'}</td>
+            <td style="padding:12px;border-bottom:1px solid #e5e7eb;text-align:right;">${income}</td>
+            <td style="padding:12px;border-bottom:1px solid #e5e7eb;text-align:right;">${loan}</td>
+            <td style="padding:12px;border-bottom:1px solid #e5e7eb;text-align:right;">${term}</td>
+            <td style="padding:12px;border-bottom:1px solid #e5e7eb;text-align:right;font-weight:600;">${(prob * 100).toFixed(1)}%</td>
+            <td style="padding:12px;border-bottom:1px solid #e5e7eb;text-align:center;"><span class="risk-badge ${riskClass}" style="padding:4px 10px;font-size:12px;">${riskLevel}</span></td>
+            <td style="padding:12px;border-bottom:1px solid #e5e7eb;text-align:center;font-size:12px;">${record.suggestion}</td>
+            <td style="padding:12px;border-bottom:1px solid #e5e7eb;">${record.timestamp}</td>
+            <td style="padding:12px;border-bottom:1px solid #e5e7eb;text-align:center;">
+                <button class="btn btn-outline" style="padding:4px 8px;font-size:12px;" onclick="showRecordDetail(${record.id})">查看</button>
+                <button class="btn btn-danger" style="padding:4px 8px;font-size:12px;margin-left:4px;" onclick="deleteRecord(${record.id})">删除</button>
+            </td>
+        </tr>`;
+    }).join('');
+}
+
+function filterRecords() {
+    const riskLevel = document.getElementById('filterRiskLevel').value;
+    const suggestion = document.getElementById('filterSuggestion').value;
+    const name = document.getElementById('filterName').value;
+    const phone = document.getElementById('filterPhone').value;
+
+    let url = '/api/records?';
+    if (riskLevel) url += `riskLevel=${riskLevel}&`;
+    if (suggestion) url += `suggestion=${suggestion}&`;
+    if (name) url += `name=${encodeURIComponent(name)}&`;
+    if (phone) url += `phone=${encodeURIComponent(phone)}&`;
+
+    showToast('正在筛选...', 'info');
+    fetch(url)
+        .then(res => res.json())
+        .then(data => {
+            filteredRecords = data.records || [];
+            updateRecordsTable();
+            updateRecordsStats(data.stats);
+            showToast('筛选完成', 'success');
+        })
+        .catch(err => {
+            showToast('筛选失败', 'error');
+        });
+}
+
+function clearFilter() {
+    document.getElementById('filterRiskLevel').value = '';
+    document.getElementById('filterSuggestion').value = '';
+    document.getElementById('filterName').value = '';
+    document.getElementById('filterPhone').value = '';
+    filteredRecords = allRecords;
+    updateRecordsTable();
+    showToast('筛选已清除', 'info');
+}
+
+function showRecordDetail(recordId) {
+    fetch(`/api/records/${recordId}`)
+        .then(res => res.json())
+        .then(record => {
+            if (record.error) {
+                showToast('记录不存在', 'error');
+                return;
+            }
+
+            // 构建详情内容
+            const purposeMap = {
+                0: '债务合并', 1: '信用卡还款', 2: '房屋装修', 3: '其他用途',
+                4: '购车', 5: '医疗支出', 6: '婚礼支出', 7: '搬家',
+                8: '房屋改善', 9: '教育支出', 10: '小企业经营'
+            };
+            const homeMap = { 0: '租房', 1: '按揭购房', 2: '自有房产', 3: '其他' };
+
+            const prob = record.probability;
+            let riskLevel, riskClass;
+            if (prob < 0.15) { riskLevel = '低风险'; riskClass = 'risk-low'; }
+            else if (prob < 0.30) { riskLevel = '中低风险'; riskClass = 'risk-med-low'; }
+            else if (prob < 0.50) { riskLevel = '中风险'; riskClass = 'risk-med'; }
+            else if (prob < 0.70) { riskLevel = '中高风险'; riskClass = 'risk-med-high'; }
+            else { riskLevel = '高风险'; riskClass = 'risk-high'; }
+
+            document.getElementById('recordDetailContent').innerHTML = `
+                <div style="background:linear-gradient(135deg,#f0f4ff 0%,#e8f0fe 100%);padding:20px;border-radius:8px;margin-bottom:20px;text-align:center;">
+                    <div style="font-size:36px;font-weight:700;color:var(--primary);">${(prob * 100).toFixed(2)}%</div>
+                    <div style="color:var(--text-secondary);margin-top:4px;">违约概率</div>
+                    <span class="risk-badge ${riskClass}" style="margin-top:12px;">${riskLevel}</span>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+                    <div class="card" style="margin-bottom:0;">
+                        <div class="card-header" style="padding:12px 16px;"><div class="card-title" style="font-size:14px;"><span class="icon">📋</span>申请人信息</div></div>
+                        <div class="card-body" style="padding:12px 16px;">
+                            <div class="config-row"><span class="config-key">申请人姓名</span><span class="config-value">${record.applicantName || '--'}</span></div>
+                            <div class="config-row"><span class="config-key">联系电话</span><span class="config-value">${record.applicantPhone || '--'}</span></div>
+                            <div class="config-row"><span class="config-key">年收入</span><span class="config-value">${record.annualIncome ? (record.annualIncome / 10000).toFixed(1) + '万元' : '--'}</span></div>
+                            <div class="config-row"><span class="config-key">就业年限</span><span class="config-value">${record.employmentLength || '--'} 年</span></div>
+                            <div class="config-row"><span class="config-key">房产状态</span><span class="config-value">${homeMap[record.homeOwnership] || '--'}</span></div>
+                        </div>
+                    </div>
+
+                    <div class="card" style="margin-bottom:0;">
+                        <div class="card-header" style="padding:12px 16px;"><div class="card-title" style="font-size:14px;"><span class="icon">💰</span>贷款信息</div></div>
+                        <div class="card-body" style="padding:12px 16px;">
+                            <div class="config-row"><span class="config-key">贷款金额</span><span class="config-value">${record.loanAmnt ? (record.loanAmnt / 10000).toFixed(1) + '万元' : '--'}</span></div>
+                            <div class="config-row"><span class="config-key">贷款期限</span><span class="config-value">${record.term || '--'} 年</span></div>
+                            <div class="config-row"><span class="config-key">贷款用途</span><span class="config-value">${purposeMap[record.purpose] || '--'}</span></div>
+                            <div class="config-row"><span class="config-key">信用等级</span><span class="config-value">${record.grade || '--'}</span></div>
+                            <div class="config-row"><span class="config-key">建议利率</span><span class="config-value">${record.interestRate ? record.interestRate + '%' : '--'}</span></div>
+                        </div>
+                    </div>
+
+                    <div class="card" style="margin-bottom:0;">
+                        <div class="card-header" style="padding:12px 16px;"><div class="card-title" style="font-size:14px;"><span class="icon">📊</span>信用状况</div></div>
+                        <div class="card-body" style="padding:12px 16px;">
+                            <div class="config-row"><span class="config-key">信用卡总额度</span><span class="config-value">${record.creditLimit ? (record.creditLimit / 10000).toFixed(1) + '万' : '--'}</span></div>
+                            <div class="config-row"><span class="config-key">已使用额度</span><span class="config-value">${record.creditUsed ? (record.creditUsed / 10000).toFixed(1) + '万' : '--'}</span></div>
+                            <div class="config-row"><span class="config-key">每月还款支出</span><span class="config-value">${record.monthlyDebt ? record.monthlyDebt + '元' : '--'}</span></div>
+                            <div class="config-row"><span class="config-key">信用账户总数</span><span class="config-value">${record.totalAcc || '--'}</span></div>
+                            <div class="config-row"><span class="config-key">活跃账户数</span><span class="config-value">${record.openAcc || '--'}</span></div>
+                        </div>
+                    </div>
+
+                    <div class="card" style="margin-bottom:0;">
+                        <div class="card-header" style="padding:12px 16px;"><div class="card-title" style="font-size:14px;"><span class="icon">⚠️</span>风险指标</div></div>
+                        <div class="card-body" style="padding:12px 16px;">
+                            <div class="config-row"><span class="config-key">FICO评分</span><span class="config-value">${record.ficoScore || '--'}</span></div>
+                            <div class="config-row"><span class="config-key">债务收入比(DTI)</span><span class="config-value">${record.dti ? record.dti + '%' : '--'}</span></div>
+                            <div class="config-row"><span class="config-key">额度使用率</span><span class="config-value">${record.revolUtil ? record.revolUtil + '%' : '--'}</span></div>
+                            <div class="config-row"><span class="config-key">贷款收入比</span><span class="config-value">${record.loanToIncome ? record.loanToIncome + '%' : '--'}</span></div>
+                            <div class="config-row"><span class="config-key">逾期次数(2年)</span><span class="config-value">${record.delinquency || 0} 次</span></div>
+                            <div class="config-row"><span class="config-key">公共负面记录</span><span class="config-value">${record.pubRec || 0} 条</span></div>
+                            <div class="config-row"><span class="config-key">破产记录</span><span class="config-value">${record.pubRecBankruptcies ? '有' : '无'}</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="background:#f9fafb;padding:16px;border-radius:8px;margin-top:20px;">
+                    <div style="font-size:14px;font-weight:600;margin-bottom:8px;">审批建议</div>
+                    <div style="font-size:16px;color:var(--primary);font-weight:600;">${record.suggestion}</div>
+                    <div style="font-size:12px;color:var(--text-secondary);margin-top:8px;">申请时间: ${record.timestamp}</div>
+                </div>
+            `;
+
+            document.getElementById('recordDetailModal').style.display = 'block';
+        })
+        .catch(err => {
+            showToast('获取详情失败', 'error');
+        });
+}
+
+function closeDetailModal() {
+    document.getElementById('recordDetailModal').style.display = 'none';
+}
+
+function deleteRecord(recordId) {
+    if (!confirm('确定要删除这条记录吗？')) return;
+
+    fetch(`/api/records/${recordId}`, { method: 'DELETE' })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                showToast('记录已删除', 'success');
+                refreshRecords();
+            } else {
+                showToast('删除失败', 'error');
+            }
+        })
+        .catch(err => {
+            showToast('删除失败', 'error');
+        });
+}
+
+function exportRecords() {
+    showToast('导出功能开发中，可手动复制数据', 'info');
+}
+
+function prevPage() {
+    showToast('分页功能开发中', 'info');
+}
+
+function nextPage() {
+    showToast('分页功能开发中', 'info');
 }
 
 // ====== 模型配置 ======

@@ -1,0 +1,32 @@
+[
+  {
+    "id": 1,
+    "applicantName": "",
+    "applicantPhone": "",
+    "annualIncome": 0,
+    "employmentLength": 0,
+    "homeOwnership": 0,
+    "loanAmnt": 0,
+    "purpose": 0,
+    "term": 5,
+    "creditLimit": 0,
+    "creditUsed": 0,
+    "monthlyDebt": 0,
+    "totalAcc": 0,
+    "openAcc": 0,
+    "delinquency": 0,
+    "pubRec": 0,
+    "pubRecBankruptcies": 0,
+    "probability": 0.09876543209876543,
+    "ficoScore": 675,
+    "dti": 0.0,
+    "revolUtil": 0,
+    "loanToIncome": 100.0,
+    "riskScore": 2.63,
+    "interestRate": 8.5,
+    "grade": "B",
+    "installment": 20.52,
+    "suggestion": "自动通过",
+    "timestamp": "2026-05-14 21:25:54"
+  }
+]
